@@ -29,7 +29,7 @@ module RackReverseProxy
       private
 
       def formatted_matches
-        matches.map(&:to_s).join(", ")
+        matches.join(", ")
       end
     end
   end

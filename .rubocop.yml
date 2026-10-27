@@ -1,21 +1,19 @@
+plugins:
+  - rubocop-rspec
+
+AllCops:
+  NewCops: enable
+  SuggestExtensions: false
+  TargetRubyVersion: 4.0
+
 Style/StringLiterals:
   EnforcedStyle: double_quotes
 
-Metrics/LineLength:
+Layout/LineLength:
   Max: 100
 
-#begin ruby 1.8 support
-Style/HashSyntax:
-  EnforcedStyle: hash_rockets
-
-Style/Lambda:
+Lint/MissingSuper:
   Enabled: false
 
-Style/TrailingCommaInLiteral:
-  EnforcedStyleForMultiline: no_comma
-
-Style/TrailingCommaInArguments:
-  EnforcedStyleForMultiline: no_comma
-
-Style/EachWithObject:
+Style/FrozenStringLiteralComment:
   Enabled: false

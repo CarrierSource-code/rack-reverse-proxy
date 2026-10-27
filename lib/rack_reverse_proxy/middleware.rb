@@ -9,18 +9,18 @@ module RackReverseProxy
     include NewRelic::Agent::Instrumentation::ControllerInstrumentation if defined? NewRelic
 
     DEFAULT_OPTIONS = {
-      :preserve_host => true,
-      :stripped_headers => nil,
-      :x_forwarded_headers => true,
-      :matching => :all,
-      :replace_response_host => false
-    }
+      preserve_host: true,
+      stripped_headers: nil,
+      x_forwarded_headers: true,
+      matching: :all,
+      replace_response_host: false
+    }.freeze
 
-    def initialize(app = nil, &b)
-      @app = app || lambda { |_| [404, {}, []] }
+    def initialize(app = nil, &)
+      @app = app || ->(_) { [404, {}, []] }
       @rules = []
       @global_options = DEFAULT_OPTIONS
-      instance_eval(&b) if block_given?
+      instance_eval(&) if block_given?
     end
 
     def call(env)
@@ -34,9 +34,10 @@ module RackReverseProxy
     end
 
     def reverse_proxy(rule, url = nil, opts = {})
-      if rule.is_a?(String) && url.is_a?(String) && URI(url).class == URI::Generic
+      if rule.is_a?(String) && url.is_a?(String) && URI(url).instance_of?(URI::Generic)
         raise Errors::GenericURI.new, url
       end
+
       @rules << Rule.new(rule, url, opts)
     end
   end

@@ -9,8 +9,8 @@ module Rack
   # 75b446a26ceb519ddc28f38b33309e9a2799074c
   #
   class HttpStreamingResponse
-    def each(&block)
-      response.read_body(&block)
+    def each(&)
+      response.read_body(&)
     ensure
       session.end_request_hacked unless mocking?
     end

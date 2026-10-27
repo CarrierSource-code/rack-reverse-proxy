@@ -1,11 +1,9 @@
 require "rack_reverse_proxy/response_builder"
 
 module RackReverseProxy
-  # FIXME: Enable them and fix issues during refactoring
-  # rubocop:disable Metrics/ClassLength
-
   # RoundTrip represents one request-response made by rack-reverse-proxy
   # middleware.
+  # rubocop:disable-next Metrics/ClassLength
   class RoundTrip
     def initialize(app, env, global_options, rules, response_builder_klass = ResponseBuilder)
       @app = app
@@ -18,6 +16,7 @@ module RackReverseProxy
     def call
       return app.call(env) if rule.nil?
       return proxy_with_newrelic if new_relic?
+
       proxy
     end
 
@@ -30,7 +29,7 @@ module RackReverseProxy
     end
 
     def proxy_with_newrelic
-      perform_action_with_newrelic_trace(:name => action_name, :request => source_request) do
+      perform_action_with_newrelic_trace(name: action_name, request: source_request) do
         proxy
       end
     end
@@ -45,12 +44,13 @@ module RackReverseProxy
     end
 
     def uri
-      return @_uri if defined?(@_uri)
-      @_uri = rule.get_uri(path, env, headers, source_request)
+      return @uri if defined?(@uri)
+
+      @uri = rule.get_uri(path, env, headers, source_request)
     end
 
     def options
-      @_options ||= global_options.dup.merge(rule.options)
+      @options ||= global_options.dup.merge(rule.options)
     end
 
     def https_redirect
@@ -66,11 +66,11 @@ module RackReverseProxy
     end
 
     def target_request
-      @_target_request ||= build_target_request
+      @target_request ||= build_target_request
     end
 
     def target_request_headers
-      @_target_request_headers ||= headers
+      @target_request_headers ||= headers
     end
 
     def build_target_request
@@ -81,11 +81,13 @@ module RackReverseProxy
 
     def preserve_host
       return unless options[:preserve_host]
+
       target_request_headers["HOST"] = host_header
     end
 
     def strip_headers
       return unless options[:stripped_headers]
+
       options[:stripped_headers].each do |header|
         target_request_headers.delete(header)
       end
@@ -93,11 +95,13 @@ module RackReverseProxy
 
     def host_header
       return uri.host if uri.port == uri.default_port
+
       "#{uri.host}:#{uri.port}"
     end
 
     def set_forwarded_headers
       return unless options[:x_forwarded_headers]
+
       target_request_headers["X-Forwarded-Host"] = source_request.host
       target_request_headers["X-Forwarded-Port"] = source_request.port.to_s
       target_request_headers["X-Forwarded-Proto"] = source_request.scheme
@@ -109,6 +113,7 @@ module RackReverseProxy
 
     def set_basic_auth
       return unless need_basic_auth?
+
       target_request.basic_auth(options[:username], options[:password])
     end
 
@@ -118,6 +123,7 @@ module RackReverseProxy
 
     def setup_body
       return unless can_have_body? && body?
+
       source_request.body.rewind
       target_request.body_stream = source_request.body
     end
@@ -136,6 +142,7 @@ module RackReverseProxy
 
     def set_content_type
       return unless content_type?
+
       target_request.content_type = source_request.content_type
     end
 
@@ -144,7 +151,7 @@ module RackReverseProxy
     end
 
     def target_response
-      @_target_response ||= response_builder_klass.new(
+      @target_response ||= response_builder_klass.new(
         target_request,
         uri,
         options
@@ -152,13 +159,12 @@ module RackReverseProxy
     end
 
     def response_headers
-      @_response_headers ||= build_response_headers.transform_keys(&:downcase)
+      @response_headers ||= build_response_headers.transform_keys(&:downcase)
     end
 
     def build_response_headers
-      ["Transfer-Encoding", "Status"].inject(rack_response_headers) do |acc, header|
+      %w[Transfer-Encoding Status].each_with_object(rack_response_headers) do |header, acc|
         acc.delete(header)
-        acc
       end
     end
 
@@ -172,12 +178,13 @@ module RackReverseProxy
 
     def replace_location_header
       return unless need_replace_location?
+
       rewrite_uri(response_location, source_request)
       response_headers["location"] = response_location.to_s
     end
 
     def response_location
-      @_response_location ||= URI(response_headers["location"] || uri)
+      @response_location ||= URI(response_headers["location"] || uri)
     end
 
     def need_replace_location?
@@ -218,10 +225,9 @@ module RackReverseProxy
     end
 
     def format_headers(headers)
-      headers.inject({}) do |acc, (key, val)|
+      headers.each_with_object({}) do |(key, val), acc|
         formated_key = key.split("-").map(&:capitalize).join("-")
         acc[formated_key] = Array(val)
-        acc
       end
     end
 
@@ -236,22 +242,24 @@ module RackReverseProxy
     end
 
     def source_request
-      @_source_request ||= Rack::Request.new(env)
+      @source_request ||= Rack::Request.new(env)
     end
 
     def rule
-      return @_rule if defined?(@_rule)
-      @_rule = find_rule
+      return @rule if defined?(@rule)
+
+      @rule = find_rule
     end
 
     def find_rule
       return if matches.empty?
+
       non_ambiguous_match
       matches.first
     end
 
     def path
-      @_path ||= source_request.fullpath
+      @path ||= source_request.fullpath
     end
 
     def headers
@@ -259,13 +267,14 @@ module RackReverseProxy
     end
 
     def matches
-      @_matches ||= rules.select do |rule|
+      @matches ||= rules.select do |rule|
         rule.proxy?(path, headers, source_request)
       end
     end
 
     def non_ambiguous_match
       return unless ambiguous_match?
+
       raise Errors::AmbiguousMatch.new(path, matches)
     end
 

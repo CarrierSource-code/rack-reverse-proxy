@@ -3,11 +3,11 @@ require "spec_helper"
 module RackReverseProxy
   RSpec.describe ResponseBuilder do
     let(:options) { {} }
-    let(:uri_opt) { { :uri => "http://example.org/hello/world" } }
-    let(:request) { double("Request") }
+    let(:uri_opt) { { uri: "http://example.org/hello/world" } }
+    let(:request) { instance_double(Rack::Request) }
 
     subject(:response) do
-      ResponseBuilder.new(
+      described_class.new(
         request,
         URI(uri_opt[:uri]),
         options
@@ -25,10 +25,10 @@ module RackReverseProxy
 
     it "sets up ssl when needed" do
       uri_opt[:uri] = "https://example.org/hello/world"
-      expect(response.use_ssl).to eq(true)
+      expect(response.use_ssl).to be(true)
     end
 
-    it "it is possible to change ssl verify mode" do
+    it "is possible to change ssl verify mode" do
       mode = OpenSSL::SSL::VERIFY_NONE
       options[:verify_mode] = mode
       expect(response.verify_mode).to eq(mode)

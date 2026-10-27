@@ -11,27 +11,27 @@ module RackReverseProxy
       @spec = build_matcher(spec)
     end
 
-    def proxy?(path, *args)
-      matches(path, *args).any?
+    def proxy?(path, *)
+      matches(path, *).any?
     end
 
-    def get_uri(path, env, *args)
+    def get_uri(path, env, *)
       Candidate.new(
         self,
         has_custom_url,
         path,
         env,
-        matches(path, *args)
+        matches(path, *)
       ).build_uri
     end
 
-    def transform(path, env, response, request_uri, *args)
+    def transform(path, env, response, request_uri, *)
       Candidate.new(
         self,
         has_custom_url,
         path,
         env,
-        matches(path, *args)
+        matches(path, *)
       ).transform(response, request_uri)
     end
 
@@ -43,14 +43,14 @@ module RackReverseProxy
 
     attr_reader :spec, :url, :has_custom_url
 
-    def matches(path, *args)
+    def matches(path, *)
       Matches.new(
         spec,
         url,
         path,
         options[:accept_headers],
         has_custom_url,
-        *args
+        *
       )
     end
 
@@ -58,6 +58,7 @@ module RackReverseProxy
       return /^#{spec}/ if spec.is_a?(String)
       return spec if spec.respond_to?(:match)
       return spec if spec.respond_to?(:call)
+
       raise ArgumentError, "Invalid Rule for reverse_proxy"
     end
 
@@ -75,6 +76,7 @@ module RackReverseProxy
 
       def build_uri
         return nil unless url
+
         raw_uri
       end
 
@@ -89,6 +91,7 @@ module RackReverseProxy
       def raw_uri
         return substitute_matches if with_substitutions?
         return just_uri if has_custom_url
+
         uri_with_path
       end
 
@@ -103,6 +106,7 @@ module RackReverseProxy
       def evaluate(url)
         return unless url
         return url.call(env) if lazy?(url)
+
         url.clone
       end
 
@@ -121,9 +125,8 @@ module RackReverseProxy
 
     # Matches represents collection of matched objects for Rule
     class Matches
-      # rubocop:disable Metrics/ParameterLists
-
       # FIXME: eliminate :url, :accept_headers, :has_custom_url
+      # rubocop:disable-next Metrics/ParameterLists
       def initialize(spec, url, path, accept_headers, has_custom_url, headers, rackreq, *_)
         @spec = spec
         @url = url
@@ -141,6 +144,7 @@ module RackReverseProxy
 
       def custom_url
         return url unless has_custom_url
+
         found.map do |match|
           match.url(path)
         end.first
@@ -167,7 +171,7 @@ module RackReverseProxy
       attr_reader :spec, :url, :path, :headers, :rackreq, :spec_arity, :has_custom_url
 
       def found
-        @_found ||= find_matches
+        @found ||= find_matches
       end
 
       def find_matches
@@ -177,7 +181,7 @@ module RackReverseProxy
       end
 
       def spec_params
-        @_spec_params ||= _spec_params
+        @spec_params ||= _spec_params
       end
 
       def _spec_params
@@ -189,16 +193,18 @@ module RackReverseProxy
       end
 
       def spec_param_count
-        @_spec_param_count ||= _spec_param_count
+        @spec_param_count ||= _spec_param_count
       end
 
       def _spec_param_count
         return 1 if spec_arity == -1
+
         spec_arity
       end
 
       def spec_match_method_name
         return :match if spec.respond_to?(:match)
+
         :call
       end
     end
